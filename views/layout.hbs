@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>{{ title }}</title>
@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="/css/style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body class="{{#if bodyClass}}{{bodyClass}}{{else}}home{{/if}}">
   <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
@@ -15,6 +16,15 @@
         <!-- Title -->
         <span class="mdl-layout-title">{{ title }}</span>
         <!-- Add spacer, to align navigation to the right -->
+        <div class="mdl-layout-spacer"></div>
+        {{#if numbers}}
+        <select id="phoneNumbers">
+          <option disabled selected>Select something</option>
+          {{#each numbers}}
+            <option value="{{this.number}}">{{this.name}} ({{this.number}})</option>
+          {{/each}}
+        </select>
+        {{/if}}
         <div class="mdl-layout-spacer"></div>
         <!-- Navigation -->
         <nav class="mdl-navigation mdl-layout--large-screen-only">
@@ -40,5 +50,41 @@
   </div>
 
   <script type="text/javascript" src="/js/material.min.js"></script>
+  <script src="https://unpkg.com/ts-select2@0.1.0/dist/ts-select2.min.js"></script>
+  <script>
+
+    const parseUrl = href => {
+      const parser = document.createElement('a');
+      parser.href = href;
+      return parser
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+
+      const $select = document.querySelector('#phoneNumbers')
+
+      if ($select) {
+        if (window.location.search.includes('phoneNumber')) {
+          const phoneNumber = window.location.search.split('=')[1];
+          $select.value = decodeURIComponent(phoneNumber);
+        }
+        new TsSelect2($select, {  width: `250px` });
+        $select.addEventListener('change', (e) => {
+          document.location.href = `${window.location.origin}?phoneNumber=${encodeURIComponent(e.target.value)}`
+        })
+      }
+
+      document.querySelectorAll('a[href]').forEach(el => {
+        const parser = parseUrl(el.getAttribute('href'))
+        el.setAttribute('href', parser.origin + parser.pathname + window.location.search + parser.hash)
+      })
+      document.querySelectorAll('form[action]').forEach(el => {
+        const parser = parseUrl(el.getAttribute('action'))
+        el.setAttribute('action', parser.origin + parser.pathname + window.location.search + parser.hash)
+      })
+    })
+
+  </script>
 </body>
 </html>

@@ -5,14 +5,16 @@ const express = require('express');
 const router = express.Router();
 const twilio = require('twilio');
 const values = require('object.values');
+const { stringify } = require('qs')
+const numbers = require('../numbers.json').results;
 
 // application requires
 const config = require("../config");
 
 const client = twilio(config.accountSid, config.authToken);
 
-router.get("/", function(req, res, next) {
-  client.messages.list({to: config.phoneNumber}).then(function(messages) {
+router.get("/", (req, res, next) => {
+  client.messages.list({to: decodeURIComponent(req.query.phoneNumber)}).then(function(messages) {
     messages = messages.reduce(function(accumulator, currentMessage){
       if(!accumulator[currentMessage.from]) {
         accumulator[currentMessage.from] = currentMessage;
@@ -22,13 +24,14 @@ router.get("/", function(req, res, next) {
     messages = values(messages);
     res.render('index', {
       messages: messages,
-      title: "Inbox"
+      title: "Inbox",
+      numbers
     });
   });
 });
 
-router.get("/outbox", function(req, res, next) {
-  client.messages.list({from: config.phoneNumber}).then(function(messages) {
+router.get("/outbox", (req, res, next) => {
+  client.messages.list({from: decodeURIComponent(req.query.phoneNumber)}).then(function(messages) {
     messages = messages.reduce(function(accumulator, currentMessage){
       if(!accumulator[currentMessage.to]) {
         accumulator[currentMessage.to] = currentMessage;
@@ -38,20 +41,22 @@ router.get("/outbox", function(req, res, next) {
     messages = values(messages);
     res.render('outbox', {
       messages: messages,
-      title: "Outbox"
+      title: "Outbox",
+      numbers
     });
   });
 });
 
 router.get("/messages/new", function(req, res, next) {
   res.render("new", {
-    title: "New message"
+    title: "New message",
+    numbers
   });
 });
 
 router.post("/messages", function(req, res, next) {
   client.messages.create({
-    from: config.phoneNumber,
+    from: decodeURIComponent(req.query.phoneNumber),
     to: req.body.phoneNumber,
     body: req.body.body
   }).then(function(data) {
@@ -59,14 +64,14 @@ router.post("/messages", function(req, res, next) {
       res.setHeader('Content-Type', 'application/json');
       res.send(JSON.stringify({ result: "success" }));
     } else {
-      res.redirect("/messages/"+req.body.phoneNumber+"#"+data.sid);
+      res.redirect("/messages/"+req.body.phoneNumber + "?" + stringify(req.query) +"#"+data.sid);
     }
   }).catch(function(err) {
     if (req.xhr) {
       res.setHeader('Content-Type', 'application/json');
       res.status(err.status).send(JSON.stringify(err));
     } else {
-      res.redirect(req.header('Referer') || '/');
+      res.redirect((req.header('Referer') || '/'));
     }
   });
 });
@@ -74,10 +79,10 @@ router.post("/messages", function(req, res, next) {
 router.get("/messages/:phoneNumber", function(req, res, next) {
   let incoming = client.messages.list({
     from: req.params.phoneNumber,
-    to: config.phoneNumber
+    to: decodeURIComponent(req.query.phoneNumber)
   });
   let outgoing = client.messages.list({
-    from: config.phoneNumber,
+    from: decodeURIComponent(req.query.phoneNumber),
     to: req.params.phoneNumber
   });
   Promise.all([incoming, outgoing]).then(function(values) {
@@ -97,7 +102,8 @@ router.get("/messages/:phoneNumber", function(req, res, next) {
       messages: allMessages,
       phoneNumber: req.params.phoneNumber,
       bodyClass: "messages",
-      title: req.params.phoneNumber
+      title: req.params.phoneNumber,
+      numbers
     });
   });
 });
