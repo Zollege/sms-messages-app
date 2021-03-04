@@ -13,7 +13,11 @@ const config = require("../config");
 
 const client = twilio(config.accountSid, config.authToken);
 
-router.get("/", (req, res, next) => {
+const auth = (req, res, next) => {
+  req.query.key === process.env.KEY ? next() : res.send('Incorrect Key')
+}
+
+router.get("/", auth, (req, res, next) => {
   client.messages.list({to: decodeURIComponent(req.query.phoneNumber)}).then(function(messages) {
     messages = messages.reduce(function(accumulator, currentMessage){
       if(!accumulator[currentMessage.from]) {
@@ -30,7 +34,7 @@ router.get("/", (req, res, next) => {
   });
 });
 
-router.get("/outbox", (req, res, next) => {
+router.get("/outbox", auth, (req, res, next) => {
   client.messages.list({from: decodeURIComponent(req.query.phoneNumber)}).then(function(messages) {
     messages = messages.reduce(function(accumulator, currentMessage){
       if(!accumulator[currentMessage.to]) {
@@ -47,14 +51,14 @@ router.get("/outbox", (req, res, next) => {
   });
 });
 
-router.get("/messages/new", function(req, res, next) {
+router.get("/messages/new", auth, function(req, res, next) {
   res.render("new", {
     title: "New message",
     numbers
   });
 });
 
-router.post("/messages", function(req, res, next) {
+router.post("/messages", auth, function(req, res, next) {
   client.messages.create({
     from: decodeURIComponent(req.query.phoneNumber),
     to: req.body.phoneNumber,
@@ -76,7 +80,7 @@ router.post("/messages", function(req, res, next) {
   });
 });
 
-router.get("/messages/:phoneNumber", function(req, res, next) {
+router.get("/messages/:phoneNumber", auth, function(req, res, next) {
   let incoming = client.messages.list({
     from: req.params.phoneNumber,
     to: decodeURIComponent(req.query.phoneNumber)

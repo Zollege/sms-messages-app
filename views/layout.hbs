@@ -50,6 +50,7 @@
   </div>
 
   <script type="text/javascript" src="/js/material.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.9.6/qs.min.js" integrity="sha512-3TmPrquYLaAsUmZKXRARTDC5siWhLAdBVqNo4dWpDABBtLU62AaoTaQJEvjxjExcZYurO6i1dnK85k8pPIBlRg==" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/ts-select2@0.1.0/dist/ts-select2.min.js"></script>
   <script>
 
@@ -66,12 +67,14 @@
 
       if ($select) {
         if (window.location.search.includes('phoneNumber')) {
-          const phoneNumber = window.location.search.split('=')[1];
-          $select.value = decodeURIComponent(phoneNumber);
+          $select.value = Qs.parse(window.location.search).phoneNumber;
         }
         new TsSelect2($select, {  width: `250px` });
         $select.addEventListener('change', (e) => {
-          document.location.href = `${window.location.origin}?phoneNumber=${encodeURIComponent(e.target.value)}`
+          document.location.href = `${window.location.origin}?${Qs.stringify({
+            ...Qs.parse(window.location.search.replace('?', '')),
+            phoneNumber: e.target.value
+          })}`
         })
       }
 
